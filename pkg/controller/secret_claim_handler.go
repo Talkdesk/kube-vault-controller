@@ -52,6 +52,8 @@ func newSecretClaimHandler(manager kube.SecretClaimManager) cache.ResourceEventH
 			}
 
 			force := !reflect.DeepEqual(claim.Spec, oldClaim.Spec)
+			log.Printf("%v", claim.Spec)
+			log.Printf("%v", oldClaim.Spec)
 			log.Printf("secret-claim-handler: %s: scheduling create/update for secret (force=%t)", key, force)
 			if err := manager.CreateOrUpdateSecret(claim, force); err != nil {
 				log.Printf("error: failed to update secret for key %s: %s", key, err.Error())
