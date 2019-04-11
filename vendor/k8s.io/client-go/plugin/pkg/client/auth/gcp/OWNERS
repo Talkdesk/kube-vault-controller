@@ -1,3 +1,8 @@
-assignees:
-  - cjcullen
-  - jlowdermilk
+# See the OWNERS docs at https://go.k8s.io/owners
+
+approvers:
+- cjcullen
+- jlowdermilk
+reviewers:
+- cjcullen
+- jlowdermilk

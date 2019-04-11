@@ -1,0 +1,15 @@
+[[dependencies]]
+  name = "github.com/hashicorp/vault"
+  version = "0.10.2"
+
+ [[dependencies]]
+  branch = "master"
+  name = "github.com/ugorji/go"
+
+[[constraint]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.12.0"
+  
+ [[dependencies]]
+  name = "k8s.io/client-go"
+  version = "9.0.0"

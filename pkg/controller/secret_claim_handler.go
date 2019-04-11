@@ -5,8 +5,10 @@ import (
 	"reflect"
 
 	"github.com/roboll/kube-vault-controller/pkg/kube"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/runtime/serializer"
+
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -81,6 +83,7 @@ func newSecretClaimHandler(manager kube.SecretClaimManager) cache.ResourceEventH
 
 // newClaimSource returns a cache.ListerWatcher for secret claim objects.
 func newSecretClaimSource(config *rest.Config, namespace string) (cache.ListerWatcher, error) {
+	scheme := runtime.NewScheme()
 	configCopy := *config
 	if configCopy.UserAgent == "" {
 		configCopy.UserAgent = rest.DefaultKubernetesUserAgent()
@@ -88,12 +91,12 @@ func newSecretClaimSource(config *rest.Config, namespace string) (cache.ListerWa
 
 	configCopy.APIPath = "/apis"
 	configCopy.GroupVersion = &kube.GroupVersion
-	configCopy.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+	configCopy.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	client, err := rest.RESTClientFor(&configCopy)
 	if err != nil {
 		return nil, err
 	}
 
-	return cache.NewListWatchFromClient(client, kube.ResourceSecretClaims, namespace, nil), nil
+	return cache.NewListWatchFromClient(client, kube.ResourceSecretClaims, namespace, fields.Everything()), nil
 }

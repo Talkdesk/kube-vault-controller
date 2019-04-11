@@ -9,8 +9,9 @@ import (
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/roboll/kube-vault-controller/pkg/kube"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -51,7 +52,7 @@ func (ctrl *controller) CreateOrUpdateSecret(claim *kube.SecretClaim, force bool
 		return err
 	}
 
-	existing, err := ctrl.kclient.Core().Secrets(claim.Namespace).Get(claim.Name)
+	existing, err := ctrl.kclient.CoreV1().Secrets(claim.Namespace).Get(claim.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("vault-controller: %s: creating secret from path %s", key, claim.Spec.Path)
 		err := ctrl.createSecret(key, claim)
@@ -111,7 +112,7 @@ func (ctrl *controller) updateSecretMetadata(secret *vaultapi.Secret, existing *
 	leaseDuration := time.Duration(secret.LeaseDuration) * time.Second
 	leaseExpiration := time.Now().Add(leaseDuration).Unix()
 	updated := &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      claim.Name,
 			Namespace: claim.Namespace,
 
@@ -124,7 +125,7 @@ func (ctrl *controller) updateSecretMetadata(secret *vaultapi.Secret, existing *
 		Type: existing.Type,
 		Data: existing.Data,
 	}
-	_, err := ctrl.kclient.Core().Secrets(claim.Namespace).Update(updated)
+	_, err := ctrl.kclient.CoreV1().Secrets(claim.Namespace).Update(updated)
 	return err
 }
 
@@ -135,7 +136,7 @@ func (ctrl *controller) DeleteSecret(claim *kube.SecretClaim) error {
 	}
 
 	log.Printf("vault-controller: revoking lease for secret %s", key)
-	secret, err := ctrl.kclient.Core().Secrets(claim.Namespace).Get(claim.Name)
+	secret, err := ctrl.kclient.CoreV1().Secrets(claim.Namespace).Get(claim.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("vault-controller: %s: not revoking, failed to get secret for deleted claim: %s", key, err.Error())
 	} else {
@@ -154,14 +155,14 @@ func (ctrl *controller) DeleteSecret(claim *kube.SecretClaim) error {
 	}
 
 	log.Printf("vault-controller: %s: deleting secret", key)
-	return ctrl.kclient.Core().Secrets(claim.Namespace).Delete(claim.Name, &v1.DeleteOptions{})
+	return ctrl.kclient.CoreV1().Secrets(claim.Namespace).Delete(claim.Name, &metav1.DeleteOptions{})
 }
 
 func secretFromVault(claim *kube.SecretClaim, secret *vaultapi.Secret) *v1.Secret {
 	leaseDuration := time.Duration(secret.LeaseDuration) * time.Second
 	leaseExpiration := time.Now().Add(leaseDuration).Unix()
 	return &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      claim.Name,
 			Namespace: claim.Namespace,
 
@@ -182,7 +183,7 @@ func (ctrl *controller) createSecret(key string, claim *kube.SecretClaim) error 
 		return err
 	}
 
-	_, err = ctrl.kclient.Core().Secrets(claim.Namespace).Create(secret)
+	_, err = ctrl.kclient.CoreV1().Secrets(claim.Namespace).Create(secret)
 	if err != nil {
 		return err
 	}
@@ -195,7 +196,7 @@ func (ctrl *controller) updateSecret(key string, claim *kube.SecretClaim) error 
 		return err
 	}
 
-	_, err = ctrl.kclient.Core().Secrets(claim.Namespace).Update(secret)
+	_, err = ctrl.kclient.CoreV1().Secrets(claim.Namespace).Update(secret)
 	if err != nil {
 		return err
 	}

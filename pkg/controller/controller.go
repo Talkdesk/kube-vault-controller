@@ -7,7 +7,7 @@ import (
 	"github.com/roboll/kube-vault-controller/pkg/kube"
 	"github.com/roboll/kube-vault-controller/pkg/vault"
 
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -36,21 +36,26 @@ func New(config *Config, vconfig *vaultapi.Config, kconfig *rest.Config) (*Contr
 		return nil, err
 	}
 
-	claims, claimCtrl := cache.NewInformer(claimSource, &kube.SecretClaim{}, config.SyncPeriod, newSecretClaimHandler(vaultController))
+	claims, claimCtrl := cache.NewInformer(
+		claimSource,
+		&kube.SecretClaim{},
+		config.SyncPeriod,
+		newSecretClaimHandler(vaultController))
+
 	_, secretCtrl := cache.NewInformer(secretSource, &v1.Secret{}, 0, newSecretHandler(vaultController, claims))
 
 	return &Controller{
-		SecretController:      secretCtrl,
-		SecretClaimController: claimCtrl,
+		SecretController:      &secretCtrl,
+		SecretClaimController: &claimCtrl,
 	}, nil
 }
 
 func (ctrl *Controller) Run(stop chan struct{}) {
 	secretStop := make(chan struct{})
-	go ctrl.SecretController.Run(secretStop)
+	go (*ctrl.SecretController).Run(secretStop)
 
 	claimStop := make(chan struct{})
-	go ctrl.SecretClaimController.Run(claimStop)
+	go (*ctrl.SecretClaimController).Run(claimStop)
 
 	<-stop
 	secretStop <- struct{}{}

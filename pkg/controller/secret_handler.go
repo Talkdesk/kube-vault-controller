@@ -57,6 +57,6 @@ func newSecretSource(config *rest.Config, namespace string) (cache.ListerWatcher
 		return nil, err
 	}
 
-	secretClient := clientset.Core().RESTClient()
+	secretClient := clientset.CoreV1().RESTClient()
 	return cache.NewListWatchFromClient(secretClient, "secrets", namespace, nil), nil
 }
